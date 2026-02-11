@@ -1,12 +1,13 @@
 FROM python:3.11-slim-bookworm
 
-# Install Node.js and npm
+# Install Node.js, npm and additional dependencies
 RUN apt-get update && apt-get install -y \
     nodejs \  
     npm \
     nginx \
     curl \
     redis-server \
+    zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and group
