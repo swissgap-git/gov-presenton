@@ -1,0 +1,10 @@
+.env
+.venv
+build
+__pycache__
+.pytest_cache
+.next
+node_modules
+out
+user_data
+tmp

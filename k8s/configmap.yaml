@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: presenton-config
+data:
+  # EIAM Configuration
+  eiam-redirect-uri: "https://presenton.your-domain.ch/auth/callback"
+  
+  # Application Configuration
+  app-name: "Presenton"
+  app-version: "1.0.0"
+  
+  # Security Configuration
+  cors-origins: "https://presenton.your-domain.ch"
+  session-timeout: "3600"  # 1 hour in seconds
+  
+  # Feature Flags
+  enable-eiam-auth: "true"
+  enable-guest-access: "false"

@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presenton
+  labels:
+    app: presenton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: presenton
+  template:
+    metadata:
+      labels:
+        app: presenton
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: presenton
+        image: presenton:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: APP_DATA_DIRECTORY
+          value: "/app/user_data"
+        - name: TEMP_DIRECTORY
+          value: "/tmp/presenton"
+        - name: CAN_CHANGE_KEYS
+          value: "true"
+        - name: NODE_ENV
+          value: "production"
+        - name: SESSION_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: session-secret-key
+        - name: EIAM_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-client-id
+        - name: EIAM_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-client-secret
+        - name: EIAM_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-tenant-id
+        - name: EIAM_REDIRECT_URI
+          valueFrom:
+            configMapKeyRef:
+              name: presenton-config
+              key: eiam-redirect-uri
+        - name: LLM
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: llm
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: openai-api-key
+              optional: true
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: google-api-key
+              optional: true
+        - name: OLLAMA_MODEL
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: ollama-model
+              optional: true
+        - name: PEXELS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: pexels-api-key
+              optional: true
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: user-data
+          mountPath: /app/user_data
+        - name: temp-data
+          mountPath: /tmp/presenton
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: user-data
+        persistentVolumeClaim:
+          claimName: presenton-user-data
+      - name: temp-data
+        emptyDir: {}
+      restartPolicy: Always
