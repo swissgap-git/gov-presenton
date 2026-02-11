@@ -1,0 +1,70 @@
+#!/usr/bin/expect
+
+set timeout 30
+set password "12345678"
+
+# Connect to server and create a Docker container
+spawn ssh -o StrictHostKeyChecking=no root@192.168.200.85
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    "Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "Failed to connect - timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect "root@*"
+
+# Check if Docker is installed
+send "docker --version\r"
+expect "root@*"
+
+# If Docker not installed, install it
+send "if ! command -v docker &> /dev/null; then\r"
+expect "root@*"
+send "echo 'Installing Docker...'\r"
+expect "root@*"
+send "apt update\r"
+expect "root@*"
+send "apt install -y docker.io\r"
+expect "root@*"
+send "systemctl start docker\r"
+expect "root@*"
+send "systemctl enable docker\r"
+expect "root@*"
+send "fi\r"
+expect "root@*"
+
+# Create a simple test container
+send "echo 'Creating test container...'\r"
+expect "root@*"
+send "docker run -d --name presenton-test -p 8080:80 nginx:alpine\r"
+expect "root@*"
+
+# Check if container is running
+send "docker ps\r"
+expect "root@*"
+
+# Show container logs
+send "echo 'Container logs:'\r"
+expect "root@*"
+send "docker logs presenton-test\r"
+expect "root@*"
+
+# Show access information
+send "echo 'Container created successfully!'\r"
+expect "root@*"
+send "echo 'Access the test container at: http://192.168.200.85:8080'\r"
+expect "root@*"
+
+send "exit\r"
+expect eof
+
+puts "Container creation completed!"

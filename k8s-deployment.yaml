@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presenton
+  namespace: presenton
+  labels:
+    app: presenton
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: presenton
+  template:
+    metadata:
+      labels:
+        app: presenton
+    spec:
+      containers:
+      - name: presenton
+        image: IMAGE_PLACEHOLDER  # Wird durch build-and-push.sh ersetzt
+        ports:
+        - containerPort: 5000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: CAN_CHANGE_KEYS
+          value: "false"
+        - name: APP_DATA_DIRECTORY
+          value: "/app/user_data"
+        - name: TEMP_DIRECTORY
+          value: "/tmp/presenton"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: user-data
+          mountPath: /app/user_data
+        - name: temp-data
+          mountPath: /tmp/presenton
+      volumes:
+      - name: user-data
+        persistentVolumeClaim:
+          claimName: presenton-data-pvc
+      - name: temp-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: presenton-service
+  namespace: presenton
+spec:
+  selector:
+    app: presenton
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5000
+    protocol: TCP
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: presenton
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: presenton-data-pvc
+  namespace: presenton
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

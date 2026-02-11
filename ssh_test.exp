@@ -1,0 +1,28 @@
+#!/usr/bin/expect
+
+set timeout 15
+spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@192.168.200.85 "echo 'Connection successful' && docker --version"
+
+expect {
+    "password:" {
+        send "12345678\r"
+        exp_continue
+    }
+    "Password:" {
+        send "12345678\r"
+        exp_continue
+    }
+    "Connection successful" {
+        puts "SSH connection established successfully!"
+        exp_continue
+    }
+    timeout {
+        puts "Connection timed out"
+        exit 1
+    }
+    eof {
+        puts "Connection ended"
+    }
+}
+
+puts "Spawn output: $expect_out(buffer)"
