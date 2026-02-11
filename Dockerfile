@@ -8,6 +8,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     redis-server \
     zstd \
+    wget \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcairo2 \
+    libcups2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libvulkan1 \
+    libxdamage1 \
+    libxkbcommon0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and group
@@ -32,8 +47,8 @@ WORKDIR /app/servers/nextjs
 COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
 RUN npm install
 
-# Install chrome for puppeteer
-RUN npx puppeteer browsers install chrome --install-deps
+# Install chrome for puppeteer (dependencies already installed above)
+RUN npx puppeteer browsers install chrome
 
 # Copy Next.js app
 COPY servers/nextjs/ /app/servers/nextjs/
