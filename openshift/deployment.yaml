@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presenton
+  namespace: presenton
+  labels:
+    app: presenton
+    app.kubernetes.io/name: presenton
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: presenton
+  template:
+    metadata:
+      labels:
+        app: presenton
+        app.kubernetes.io/name: presenton
+        app.kubernetes.io/component: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # runAsUser and runAsGroup will be assigned dynamically by OpenShift
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: presenton
+        image: presenton:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: CAN_CHANGE_KEYS
+          value: "false"
+        - name: APP_DATA_DIRECTORY
+          value: "/app/user_data"
+        - name: TEMP_DIRECTORY
+          value: "/tmp/presenton"
+        - name: SESSION_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: session-secret-key
+        - name: EIAM_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-client-id
+        - name: EIAM_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-client-secret
+        - name: EIAM_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: eiam-tenant-id
+        - name: EIAM_REDIRECT_URI
+          valueFrom:
+            configMapKeyRef:
+              name: presenton-config
+              key: eiam-redirect-uri
+        - name: LLM
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: llm
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: openai-api-key
+          optional: true
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: google-api-key
+          optional: true
+        - name: OLLAMA_MODEL
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: ollama-model
+          optional: true
+        - name: PEXELS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: presenton-secrets
+              key: pexels-api-key
+          optional: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: user-data
+          mountPath: /app/user_data
+        - name: temp-data
+          mountPath: /tmp/presenton
+        - name: tmp-volume
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+      volumes:
+      - name: user-data
+        persistentVolumeClaim:
+          claimName: presenton-user-data
+      - name: temp-data
+        persistentVolumeClaim:
+          claimName: presenton-temp-data
+      - name: tmp-volume
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

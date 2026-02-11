@@ -1,0 +1,86 @@
+# Red Hat OpenShift Compatible Dockerfile for Presenton
+FROM registry.access.redhat.com/ubi9/python-311:latest
+
+# Enable Red Hat repositories and install required packages
+RUN dnf update -y && \
+    dnf install -y --setopt=install_weak_deps=False \
+    nodejs \
+    npm \
+    nginx \
+    curl \
+    wget \
+    zstd \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcairo2 \
+    libcups2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libvulkan1 \
+    libxdamage1 \
+    libxkbcommon0 \
+    && dnf clean all
+
+# Create non-root user with OpenShift-compatible UID
+RUN groupadd -r presenton -g 1001 && \
+    useradd -r -g presenton -u 1001 -d /app -s /bin/bash presenton
+
+# Create a working directory
+WORKDIR /app
+
+# Set environment variables
+ENV APP_DATA_DIRECTORY=/app/user_data
+ENV TEMP_DIRECTORY=/tmp/presenton
+ENV PYTHONPATH=/app
+ENV NODE_ENV=production
+
+# Install ollama (if needed for local AI models)
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# Install dependencies for FastAPI
+COPY servers/fastapi/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install dependencies for Next.js
+WORKDIR /app/servers/nextjs
+COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
+RUN npm ci --only=production
+
+# Install chrome for puppeteer (dependencies already installed above)
+RUN npx puppeteer browsers install chrome
+
+# Copy Next.js app and build
+COPY servers/nextjs/ /app/servers/nextjs/
+RUN npm run build
+
+WORKDIR /app
+
+# Copy FastAPI and start script
+COPY servers/fastapi/ ./servers/fastapi/
+COPY start.js LICENSE NOTICE ./
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/user_data /tmp/presenton && \
+    chown -R presenton:presenton /app && \
+    chmod -R 755 /app
+
+# Expose port
+EXPOSE 8080
+
+# Switch to non-root user
+USER 1001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
+
+# Start the servers
+CMD ["/bin/bash", "-c", "node /app/start.js"]

@@ -1,0 +1,42 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: presenton-route
+  namespace: presenton
+  labels:
+    app: presenton
+    app.kubernetes.io/name: presenton
+    app.kubernetes.io/component: frontend
+spec:
+  to:
+    kind: Service
+    name: presenton-service
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: presenton-api-route
+  namespace: presenton
+  labels:
+    app: presenton
+    app.kubernetes.io/name: presenton
+    app.kubernetes.io/component: api
+spec:
+  to:
+    kind: Service
+    name: presenton-service
+    weight: 100
+  port:
+    targetPort: 8080
+  path: /api
+  wildcardPolicy: None
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

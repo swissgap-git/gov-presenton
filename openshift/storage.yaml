@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: presenton-user-data
+  namespace: presenton
+  labels:
+    app: presenton
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3-csi  # RHOS specific storage class
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: presenton-temp-data
+  namespace: presenton
+  labels:
+    app: presenton
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: gp3-csi  # For shared temp storage if needed
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: presenton
+  labels:
+    name: presenton
+    environment: production
+    app.kubernetes.io/name: presenton
+  annotations:
+    openshift.io/description: "Presenton AI Presentation Generator"
+    openshift.io/display-name: "Presenton"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: presenton-developer
+  namespace: presenton
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["build.openshift.io"]
+  resources: ["buildconfigs", "builds"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["image.openshift.io"]
+  resources: ["imagestreams", "imagestreamtags"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["route.openshift.io"]
+  resources: ["routes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: presenton-developer-binding
+  namespace: presenton
+subjects:
+- kind: User
+  name: developer  # Replace with actual username
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: presenton-developer
+  apiGroup: rbac.authorization.k8s.io
